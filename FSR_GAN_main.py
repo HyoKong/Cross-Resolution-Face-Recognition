@@ -86,7 +86,7 @@ def main():
 
     # Data
     print('====> Preparing dataset <====')
-    trainset = HelenLoader(is_transform=True, split='all',train_mode=True)
+    trainset = HelenLoader(is_transform=True, split='train_no_rotate',train_mode=True)
     trainloader = data.DataLoader(trainset, batch_size=args.train_batch, shuffle=True, num_workers=args.workers)
 
     testset = HelenLoader(is_transform=True, split='test_no_rotate',train_mode=False)
@@ -130,8 +130,6 @@ def main():
     # overall_optim = torch.optim.RMSprop(model.parameters(),lr=lr,weight_decay=args.weight_decay)
     optimizer = None
     overall_optim = None
-    
-    # pdb.set_trace()
 
     # load model
     if args.resume:
@@ -149,17 +147,7 @@ def main():
     
     
     for epoch in range(start_epoch,args.epochs):
-        lr = args.lr
-        # if epoch <10:
-        #     lr = args.lr
-        # elif epoch <20:
-        #     lr = args.lr*0.5
-        # elif epoch <30:
-        #     lr = args.lr*0.1
-        # elif epoch < 40:
-        #     lr = args.lr*0.05
-        # else:
-        #     lr = args.lr*0.01
+
         if epoch > 100:
             schedule_lr(coarse_optim,args.lr*0.1*2.2,args.lr_decay_rate,epoch-100)
             schedule_lr(prior_optim,args.lr*0.05,args.lr_decay_rate,epoch-100)

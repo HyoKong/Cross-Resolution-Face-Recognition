@@ -29,8 +29,10 @@ def main():
     
     # Datasets
     parser.add_argument('--dataset_dir', type=str, default="")
-    parser.add_argument('-j', '--workers', default=4, type=int, metavar='N',
-                        help='number of data loading workers (default = 4)')
+    parser.add_argument('-j', '--workers', default=4, type=int, metavar='N',help='number of data loading workers (default = 4)')
+    parser.add_argument('--face_images_root',type=str, default='/media/hyo/文档/Dataset/face_dataset_v2/',help='face image dataset path')
+    parser.add_argument('--segmentation_root',type=str,default='/media/hyo/文档/Dataset/face_dataset_v2/SmithCVPR2013_dataset_original/Segmentation/',help='face segmentation path')
+    parser.add_argument('--landmark_root',type=str,default='/media/hyo/文档/Dataset/face_dataset_v2/xixixi_v2.csv',help='landmark coordinate')
     
     # Optimization option
     parser.add_argument('--epochs', default=3000, type=int, metavar='N', help='number of total epochs to run')
@@ -47,6 +49,7 @@ def main():
                         help='Decrease learning rate at these epochs')
     parser.add_argument('--gamma', type=float, default=0.1, help='LR is multiplied by gamma on shedule')
     parser.add_argument('--momentum', default=0.9, type=float, metavar='M', help='momentum')
+
     parser.add_argument('--weight_decay', '--wd', default=1e-5, type=float, metavar='W', help='weight decay')
     
     # Checkpoint
@@ -103,14 +106,7 @@ def main():
     start_epoch = 0
     title = 'FSRGAN'
 
-     
-    #  # network parameters
-    # coarse_params = list(map(id,model._coarse_sr_network.parameters()))
-    # prior_params = list(map(id,model._prior_estimation_network.parameters()))
-    # encoder_params = list(map(id,model._fine_sr_encoder.parameters()))
-    # decoder_params = list(map(id,model._fine_sr_decoder.parameters()))
-    # discriminator_params = list(map(id,model._discriminator.parameters()))
-    # base_params = filter(lambda p:id(p) not in discriminator_params ,model.parameters())
+    
     
     # criterion
     criterion_mse = MSELossFunc().cuda()
@@ -170,13 +166,6 @@ def main():
             schedule_lr(discriminator_optim, args.lr, 1, epoch)
             lr = args.lr
 
-        # if args.resume:
-        #
-        #     coarse_optim = checkpoint['coarse_optim']['param_groups']
-        #     prior_optim = checkpoint['prior_optim']
-        #     encoder_optim = checkpoint['encoder_optim']
-        #     decoder_optim = checkpoint['decoder_optim']
-        #     discriminator_optim = checkpoint['discriminator_optim']['state']
         
         print('\nEpoch: [%d | %d] LR: %.8f' % (epoch + 1, args.epochs, lr))
         train_loss = train(trainloader,model,criterion_mse,criterion_cross_entropy,criterion_landmark,
@@ -225,21 +214,7 @@ def train(train_loader, model, criterion_mse, criterion_cross_entropy,criterion_
         batch_lr_img, batch_sr_img, batch_lbl, batch_landmark = Variable(batch_lr_img), Variable(batch_sr_img), \
                                                                 Variable(batch_lbl), Variable(batch_landmark)
         
-        # for i in range(gan_epochs-1):
-        #     # coarse_out, our_sr, out_landmark, out_lbl, out_embedding1 = checkpoint(model,2,batch_lr_img)
-        #     # pdb.set_trace()
-        #     # coarse_out, our_sr, out_landmark, out_lbl, out_embedding1 = model(batch_lr_img)
-        #     # coarse_out, our_sr, out_landmark, out_lbl, out_embedding2 = model(batch_sr_img)
-        #     # coarse_out1, our_sr1, out_landmark1, out_lbl1, out_embedding1, coarse_out2, our_sr2, out_landmark2, out_lbl2, out_embedding2 = model(batch_lr_img,batch_sr_img)
-        #     out_sr,out_coarse,out_landmark,out_lbl,out_embedding1,out_embedding2 = model(batch_lr_img,batch_sr_img)
-        #     gan_loss = -criterion_mmd(out_embedding1,out_embedding2)
-        #     gan_losses.update(gan_loss.data.cpu().numpy(),batch_lr_img.size(0))
-        #     discriminator_optim.zero_grad()
-        #     gan_loss.backward()
-        #     discriminator_optim.step()
             
-        
-        
         out_sr, out_coarse, out_landmark, out_lbl, out_embedding1, out_embedding2 = model(batch_lr_img, batch_sr_img)
         gan_loss = -criterion_mmd(out_embedding1, out_embedding2)
         gan_losses.update(gan_loss.data.cpu().numpy(), batch_lr_img.size(0))
@@ -277,11 +252,7 @@ def train(train_loader, model, criterion_mse, criterion_cross_entropy,criterion_
                 ) / (2.0 * train_batch)
         loss = loss.data.cpu().numpy()
         losses.update(loss,batch_lr_img.size(0))
-        # optimizer.zero_grad()
-        # loss.backward()
-        # optimizer.step()
 
-        # measure elapsed time
         batch_time.update(time.time() - end)
         end = time.time()
         
@@ -319,15 +290,6 @@ def train(train_loader, model, criterion_mse, criterion_cross_entropy,criterion_
             ## pdb.set_trace()
             visualize.save_image(random_coarse, random_img, random_landmark, random_parsing, lr_img, sr_img, epoch,
                                  if_train=True, count=int(count / 300))
-            ##-----------------------------------------------------------------------
-            # visualize coarse network
-            # random_coarse = coarse_out[0]
-            # random_landmark = landmark_out[0]
-            # random_parsing = parsing_out[0]
-            # #random_coarse = random_coarse.detach().cpu().numpy()
-            # random_landmark = random_landmark.detach().cpu().numpy()
-            # random_parsing = random_parsing.max(dim=0)[1].detach().cpu().numpy()
-            # visualize.save_image(landmark=random_landmark,parsing=random_parsing,epoch=epoch,if_train=True,count=int(count/100))
         bar.next()
 
     bar.finish()
@@ -383,18 +345,7 @@ def test(test_loader, model, criterion_mse, criterion_cross_entropy, criterion_l
                 
                 visualize.save_image(random_coarse, random_img, random_landmark, random_parsing, lr_img, sr_img, epoch,
                                      if_train=False, count=int(count / 100))
-                ##-----------------------------------------------------------------------
-                ##visualize coarse network
-                # random_coarse = coarse_out[0]
-                # random_coarse = random_coarse.detach().cpu().numpy()
-                # visualize.save_image(coarse_image=random_coarse,epoch=epoch,if_train=True,count=int(count/90))
                 
-                # random_landmark = landmark_out[0]
-                # random_parsing = parsing_out[0]
-                # random_coarse = random_coarse[0].detach().cpu().numpy()
-                # random_landmark = random_landmark.detach().cpu().numpy()
-                # random_parsing = random_parsing.max(dim=0)[1].detach().cpu().numpy()
-                # visualize.save_image(landmark=random_landmark,parsing=random_parsing,epoch=epoch,if_train=False,count=int(count/5))
             
             # measure elapsed time
             batch_time.update(time.time() - end)
@@ -415,12 +366,7 @@ def test(test_loader, model, criterion_mse, criterion_cross_entropy, criterion_l
     return losses.avg
 
 def weights_init(m):
-    '''
-    classname = m.__class__.__name__
-    if classname.find('Conv') !=-1:
-        xavier(m.weight.data)
-        xavier(m.bias.data)
-    '''
+
     for each in m.modules():
         if isinstance(each,nn.Conv2d):
             nn.init.xavier_uniform_(each.weight.data)
@@ -429,9 +375,6 @@ def weights_init(m):
         elif isinstance(each,nn.BatchNorm2d):
             each.weight.data.fill_(1)
             each.bias.data.zero_()
-        # elif isinstance(each,nn.InstanceNorm2d):
-        #     each.weight.data.fill_(1)
-        #     each.bias.data.zero_()
         elif isinstance(each,nn.Linear):
             nn.init.xavier_uniform_(each.weight.data)
             each.bias.data.zero_()

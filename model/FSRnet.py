@@ -550,14 +550,5 @@ if __name__=='__main__':
 
     print(model(input_data)[0].size())
 
-    # oc = OctConv(ch_in=128, ch_out=128, kernel_size=3, alphas=(0., 0.5))
-    # oc1 = OctConv(ch_in=3, ch_out=10, kernel_size=7, alphas=(0.5, 0.8))
-    # oc2 = OctConv(ch_in=10, ch_out=1, kernel_size=3, alphas=(0.8, 0.))
-    # input = torch.randn(2, 128, 224, 224)
-    # out1 = oc(input)
-    # out2 = oc1(out1)
-    # out3 = oc2(out2)
-    # print(out3.shape)
-    # pdb.set_trace()
     
         
